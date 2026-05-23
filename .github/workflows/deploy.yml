@@ -8,7 +8,7 @@ on:
 
 env:
   DOTNET_VERSION: '9.0.x'
-  AZURE_WEBAPP_NAME: turnosapp
+  AZURE_WEBAPP_NAME: turnosapp-arayajs
   AZURE_WEBAPP_PACKAGE_PATH: './publish'
 
 jobs:

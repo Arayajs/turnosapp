@@ -16,8 +16,11 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.AddDbContext<AppDbContext>(options =>
-            options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+        var connStr = configuration.GetConnectionString("DefaultConnection") ?? "";
+        if (connStr.StartsWith("Data Source=", StringComparison.OrdinalIgnoreCase))
+            services.AddDbContext<AppDbContext>(o => o.UseSqlite(connStr));
+        else
+            services.AddDbContext<AppDbContext>(o => o.UseSqlServer(connStr));
 
         // Repositories
         services.AddScoped<IUserRepository, UserRepository>();

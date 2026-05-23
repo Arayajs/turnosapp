@@ -64,11 +64,14 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Auto-apply pending migrations on startup (safe for dev and Docker)
+// Auto-apply schema on startup — Migrate for SQL Server, EnsureCreated for SQLite
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();
+    if (db.Database.ProviderName?.Contains("Sqlite", StringComparison.OrdinalIgnoreCase) == true)
+        db.Database.EnsureCreated();
+    else
+        db.Database.Migrate();
 }
 
 if (app.Environment.IsDevelopment())
