@@ -1,7 +1,9 @@
 import axios from 'axios'
 
+const BASE = import.meta.env.VITE_API_URL ?? ''
+
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: `${BASE}/api`,
   headers: { 'Content-Type': 'application/json' },
 })
 
@@ -22,7 +24,7 @@ api.interceptors.response.use(
       try {
         const refreshToken = localStorage.getItem('turnosRefresh')
         if (!refreshToken) throw new Error('No refresh token')
-        const { data } = await axios.post('/api/auth/refresh-token', { refreshToken })
+        const { data } = await axios.post(`${BASE}/api/auth/refresh-token`, { refreshToken })
         localStorage.setItem('turnosToken', data.token)
         localStorage.setItem('turnosRefresh', data.refreshToken)
         original.headers.Authorization = `Bearer ${data.token}`
