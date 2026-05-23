@@ -1,0 +1,105 @@
+name: TurnOS CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  DOTNET_VERSION: '9.0.x'
+  AZURE_WEBAPP_NAME: turnosapp
+  AZURE_WEBAPP_PACKAGE_PATH: './publish'
+
+jobs:
+  # ─────────────────────────────────────────────
+  # Job 1: Build + Unit Tests
+  # ─────────────────────────────────────────────
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET ${{ env.DOTNET_VERSION }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore TurnOS.sln
+
+      - name: Build (Release)
+        run: dotnet build TurnOS.sln --configuration Release --no-restore
+
+      - name: Run unit tests
+        run: >
+          dotnet test TurnOS.sln
+          --configuration Release
+          --no-build
+          --verbosity normal
+          --logger "trx;LogFileName=test-results.trx"
+          --results-directory ./TestResults
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: ./TestResults/*.trx
+
+  # ─────────────────────────────────────────────
+  # Job 2: Publish artifact (only on push to main)
+  # ─────────────────────────────────────────────
+  publish:
+    name: Publish
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET ${{ env.DOTNET_VERSION }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore & Publish
+        run: >
+          dotnet publish src/TurnOS.API/TurnOS.API.csproj
+          --configuration Release
+          --output ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+          --no-restore
+
+      - name: Upload publish artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: webapp
+          path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+
+  # ─────────────────────────────────────────────
+  # Job 3: Deploy to Azure App Service
+  # ─────────────────────────────────────────────
+  deploy:
+    name: Deploy to Azure
+    needs: publish
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net
+
+    steps:
+      - name: Download publish artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: webapp
+          path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}

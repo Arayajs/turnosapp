@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TurnOS — Preview</title>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #2563eb; --primary-dark: #1d4ed8;
+      --bg: #f8fafc; --surface: #ffffff; --border: #e2e8f0;
+      --text: #1e293b; --text-muted: #64748b; --radius: 8px;
+      --danger: #dc2626;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+    a { color: var(--primary); text-decoration: none; cursor: pointer; }
+    button { cursor: pointer; border: none; border-radius: var(--radius); font-size: .875rem; font-weight: 500; padding: .5rem 1rem; transition: background .15s; }
+    button:disabled { opacity: .6; cursor: not-allowed; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover:not(:disabled) { background: var(--primary-dark); }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    .btn-sm { padding: .35rem .75rem; font-size: .8rem; }
+    .btn-full { width: 100%; padding: .65rem; font-size: 1rem; }
+    input, select, textarea { width: 100%; padding: .5rem .75rem; border: 1px solid var(--border); border-radius: var(--radius); font-size: .9rem; background: var(--surface); color: var(--text); outline: none; }
+    input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,.15); }
+    label { display: block; font-size: .85rem; font-weight: 500; margin-bottom: .35rem; }
+    .form-group { margin-bottom: 1rem; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+    .badge { display: inline-block; padding: .2rem .6rem; border-radius: 999px; font-size: .75rem; font-weight: 600; }
+    .badge-pending { background: #fef3c7; color: #92400e; }
+    .badge-confirmed { background: #d1fae5; color: #065f46; }
+    .badge-cancelled { background: #fee2e2; color: #991b1b; }
+    .badge-completed { background: #e0e7ff; color: #3730a3; }
+    .alert { padding: .75rem 1rem; border-radius: var(--radius); font-size: .875rem; margin-bottom: 1rem; }
+    .alert-error { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 1rem; }
+    .page { padding: 2rem 0; }
+    .page-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; }
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem; }
+    .flex { display: flex; }
+    .flex-between { display: flex; justify-content: space-between; align-items: center; }
+    .gap-2 { gap: .5rem; } .gap-4 { gap: 1rem; }
+    .mt-2 { margin-top: .5rem; } .mt-4 { margin-top: 1rem; }
+    .text-muted { color: var(--text-muted); font-size: .875rem; }
+    .text-center { text-align: center; }
+    .slot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: .5rem; margin-top: 1rem; }
+    .slot-btn { padding: .5rem; border-radius: var(--radius); font-size: .8rem; font-weight: 500; border: 1px solid var(--border); background: var(--surface); cursor: pointer; }
+    .slot-btn.available:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .slot-btn.selected { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .slot-btn.taken { background: var(--bg); color: var(--text-muted); cursor: not-allowed; text-decoration: line-through; }
+    nav { background: #1e293b; color: #fff; padding: .75rem 0; }
+    .nav-link { color: #cbd5e1; font-size: .9rem; cursor: pointer; padding: .25rem .5rem; border-radius: 4px; }
+    .nav-link:hover { color: #fff; }
+    .nav-logo { color: #fff; font-weight: 700; font-size: 1.25rem; cursor: pointer; }
+    .tab { padding: .5rem 1rem; border-radius: var(--radius); cursor: pointer; font-size: .875rem; font-weight: 500; border: 1px solid transparent; }
+    .tab.active { background: var(--primary); color: #fff; }
+    .tab.inactive { color: var(--text-muted); border-color: var(--border); }
+    .tab.inactive:hover { background: var(--bg); }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState } = React;
+
+// ── Datos mock ──────────────────────────────────────────────
+const MOCK_BUSINESSES = [
+  { id: '1', name: 'Barbería El Estilo', description: 'Cortes modernos y clásicos', address: 'Av. Principal 123', phone: '555-0100', ownerId: 'owner1' },
+  { id: '2', name: 'Clínica DentPlus', description: 'Odontología general y estética', address: 'Calle 5 #45', phone: '555-0200', ownerId: 'owner2' },
+  { id: '3', name: 'Taller MecánicaX', description: 'Servicio automotriz express', address: 'Blvd. Industrial 88', phone: '555-0300', ownerId: 'owner3' },
+];
+const MOCK_SERVICES = [
+  { id: 's1', name: 'Corte de cabello', durationMinutes: 30, price: 15, businessId: '1' },
+  { id: 's2', name: 'Afeitado clásico', durationMinutes: 45, price: 20, businessId: '1' },
+  { id: 's3', name: 'Corte + Barba', durationMinutes: 60, price: 30, businessId: '1' },
+];
+const MOCK_SLOTS = ['09:00','09:30','10:00','10:30','11:00','11:30','14:00','14:30','15:00','15:30','16:00'].map((t,i) => ({
+  startTime: `2026-06-01T${t}:00`, isAvailable: ![1,4,7].includes(i),
+}));
+const MOCK_APPOINTMENTS = [
+  { id: 'a1', serviceName: 'Corte de cabello', businessName: 'Barbería El Estilo', startTime: '2026-06-01T10:00:00', status: 'Confirmed', price: 15, notes: '' },
+  { id: 'a2', serviceName: 'Corte + Barba', businessName: 'Barbería El Estilo', startTime: '2026-05-20T14:30:00', status: 'Completed', price: 30, notes: '' },
+  { id: 'a3', serviceName: 'Afeitado clásico', businessName: 'Barbería El Estilo', startTime: '2026-05-10T09:00:00', status: 'Cancelled', price: 20, notes: 'Cancelé por viaje' },
+];
+const STATUS_LABEL = { Pending:'Pendiente', Confirmed:'Confirmada', Cancelled:'Cancelada', Completed:'Completada' };
+
+// ── Navbar ───────────────────────────────────────────────────
+function Navbar({ page, setPage, user, setUser }) {
+  return (
+    <nav>
+      <div className="container flex-between">
+        <span className="nav-logo" onClick={() => setPage('home')}>TurnOS</span>
+        <div className="flex gap-4" style={{alignItems:'center'}}>
+          <span className="nav-link" onClick={() => setPage('businesses')}>Negocios</span>
+          {user ? (
+            <>
+              {user.role === 'BusinessOwner' && <span className="nav-link" onClick={() => setPage('dashboard')}>Mi Negocio</span>}
+              <span className="nav-link" onClick={() => setPage('my-appointments')}>Mis Citas</span>
+              <span style={{color:'#94a3b8', fontSize:'.875rem'}}>{user.fullName}</span>
+              <button className="btn-outline btn-sm" style={{color:'#cbd5e1',borderColor:'#475569'}} onClick={() => { setUser(null); setPage('home'); }}>Salir</button>
+            </>
+          ) : (
+            <>
+              <span className="nav-link" onClick={() => setPage('login')}>Iniciar sesión</span>
+              <button className="btn-primary btn-sm" onClick={() => setPage('register')}>Registrarse</button>
+            </>
+          )}
+        </div>
+      </div>
+    </nav>
+  );
+}
+
+// ── Home ─────────────────────────────────────────────────────
+function HomePage({ setPage }) {
+  return (
+    <div>
+      <section style={{background:'linear-gradient(135deg,#1e293b 0%,#2563eb 100%)',color:'#fff',padding:'5rem 0',textAlign:'center'}}>
+        <div className="container">
+          <h1 style={{fontSize:'2.75rem',fontWeight:800,marginBottom:'1rem',lineHeight:1.2}}>Agenda tus citas<br/>en segundos</h1>
+          <p style={{fontSize:'1.15rem',color:'#cbd5e1',maxWidth:520,margin:'0 auto 2rem'}}>TurnOS conecta clientes con barberías, clínicas y talleres. Elige horario, confirma al instante.</p>
+          <div className="flex gap-4" style={{justifyContent:'center'}}>
+            <button className="btn-primary" style={{padding:'.75rem 2rem',fontSize:'1rem'}} onClick={() => setPage('businesses')}>Ver negocios</button>
+            <button className="btn-outline" style={{padding:'.75rem 2rem',fontSize:'1rem',color:'#fff',borderColor:'#94a3b8'}} onClick={() => setPage('register')}>Registrar mi negocio</button>
+          </div>
+        </div>
+      </section>
+      <section style={{padding:'4rem 0'}}>
+        <div className="container">
+          <h2 style={{textAlign:'center',fontSize:'1.75rem',fontWeight:700,marginBottom:'2.5rem'}}>¿Por qué TurnOS?</h2>
+          <div className="grid-3">
+            {[
+              {icon:'📅',title:'Agenda 24/7',desc:'Tus clientes pueden reservar en cualquier momento, desde cualquier dispositivo.'},
+              {icon:'🔔',title:'Confirmación al instante',desc:'Email automático al confirmar o cancelar una cita.'},
+              {icon:'📊',title:'Panel para negocios',desc:'Visualiza todas tus citas del día, confirma o cancela con un clic.'},
+            ].map(f => (
+              <div key={f.title} className="card" style={{textAlign:'center'}}>
+                <div style={{fontSize:'2.5rem',marginBottom:'.75rem'}}>{f.icon}</div>
+                <h3 style={{fontWeight:700,marginBottom:'.5rem'}}>{f.title}</h3>
+                <p className="text-muted">{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+// ── Login ─────────────────────────────────────────────────────
+function LoginPage({ setPage, setUser }) {
+  const [form, setForm] = useState({email:'', password:''});
+  const [error, setError] = useState('');
+  const handleSubmit = e => {
+    e.preventDefault();
+    if (form.email === 'owner@test.com') {
+      setUser({ id:'owner1', fullName:'Carlos Dueño', email:form.email, role:'BusinessOwner' });
+      setPage('dashboard');
+    } else if (form.email === 'client@test.com') {
+      setUser({ id:'client1', fullName:'Ana Cliente', email:form.email, role:'Client' });
+      setPage('businesses');
+    } else {
+      setError('Usa owner@test.com o client@test.com (cualquier contraseña)');
+    }
+  };
+  return (
+    <div className="page" style={{display:'flex',justifyContent:'center'}}>
+      <div className="card" style={{width:'100%',maxWidth:420}}>
+        <h1 style={{fontSize:'1.5rem',fontWeight:700,marginBottom:'.25rem'}}>Iniciar sesión</h1>
+        <p className="text-muted" style={{marginBottom:'1.5rem'}}>¿No tienes cuenta? <a onClick={() => setPage('register')}>Regístrate</a></p>
+        {error && <div className="alert alert-error">{error}</div>}
+        <form onSubmit={handleSubmit}>
+          <div className="form-group"><label>Email</label><input type="email" value={form.email} onChange={e => setForm(f=>({...f,email:e.target.value}))} required placeholder="owner@test.com o client@test.com" /></div>
+          <div className="form-group"><label>Contraseña</label><input type="password" value={form.password} onChange={e => setForm(f=>({...f,password:e.target.value}))} required placeholder="cualquiera" /></div>
+          <button type="submit" className="btn-primary btn-full">Ingresar</button>
+        </form>
+        <p className="text-muted text-center mt-4" style={{fontSize:'.8rem'}}>
+          Demo: <strong>owner@test.com</strong> (dueño) · <strong>client@test.com</strong> (cliente)
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ── Register ──────────────────────────────────────────────────
+function RegisterPage({ setPage, setUser }) {
+  const [form, setForm] = useState({fullName:'',email:'',password:'',phone:'',role:'Client'});
+  const handleSubmit = e => {
+    e.preventDefault();
+    setUser({ id:'new1', fullName:form.fullName, email:form.email, role:form.role });
+    setPage(form.role === 'BusinessOwner' ? 'dashboard' : 'businesses');
+  };
+  return (
+    <div className="page" style={{display:'flex',justifyContent:'center'}}>
+      <div className="card" style={{width:'100%',maxWidth:460}}>
+        <h1 style={{fontSize:'1.5rem',fontWeight:700,marginBottom:'.25rem'}}>Crear cuenta</h1>
+        <p className="text-muted" style={{marginBottom:'1.5rem'}}>¿Ya tienes cuenta? <a onClick={() => setPage('login')}>Inicia sesión</a></p>
+        <form onSubmit={handleSubmit}>
+          <div className="form-group"><label>Nombre completo</label><input required value={form.fullName} onChange={e => setForm(f=>({...f,fullName:e.target.value}))} placeholder="Juan Pérez" /></div>
+          <div className="form-group"><label>Email</label><input type="email" required value={form.email} onChange={e => setForm(f=>({...f,email:e.target.value}))} placeholder="tu@email.com" /></div>
+          <div className="form-group"><label>Contraseña</label><input type="password" required minLength={6} value={form.password} onChange={e => setForm(f=>({...f,password:e.target.value}))} placeholder="Mínimo 6 caracteres" /></div>
+          <div className="form-group"><label>Teléfono <span className="text-muted">(opcional)</span></label><input value={form.phone} onChange={e => setForm(f=>({...f,phone:e.target.value}))} /></div>
+          <div className="form-group">
+            <label>Tipo de cuenta</label>
+            <select value={form.role} onChange={e => setForm(f=>({...f,role:e.target.value}))}>
+              <option value="Client">Cliente — quiero agendar citas</option>
+              <option value="BusinessOwner">Dueño de negocio — quiero gestionar citas</option>
+            </select>
+          </div>
+          <button type="submit" className="btn-primary btn-full">Crear cuenta</button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ── Businesses ────────────────────────────────────────────────
+function BusinessesPage({ setPage, setSelectedBiz }) {
+  return (
+    <div className="container page">
+      <h1 className="page-title">Negocios disponibles</h1>
+      <div className="grid-2">
+        {MOCK_BUSINESSES.map(b => (
+          <div key={b.id} className="card">
+            <div className="flex-between" style={{marginBottom:'.5rem'}}>
+              <h2 style={{fontSize:'1.1rem',fontWeight:700}}>{b.name}</h2>
+            </div>
+            <p className="text-muted" style={{marginBottom:'.75rem',fontSize:'.875rem'}}>{b.description}</p>
+            <div className="text-muted" style={{fontSize:'.8rem',marginBottom:'1rem'}}>
+              📍 {b.address} &nbsp; 📞 {b.phone}
+            </div>
+            <button className="btn-primary btn-sm" onClick={() => { setSelectedBiz(b); setPage('booking'); }}>Ver servicios</button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Booking ───────────────────────────────────────────────────
+function BookingPage({ business, user, setPage }) {
+  const [selectedService, setSelectedService] = useState(MOCK_SERVICES[0]);
+  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [notes, setNotes] = useState('');
+  const [success, setSuccess] = useState('');
+
+  const handleBook = () => {
+    if (!user) { setPage('login'); return; }
+    setSuccess('¡Cita agendada! Revisa tu email para la confirmación.');
+    setSelectedSlot(null);
+  };
+
+  return (
+    <div className="container page">
+      <div className="flex gap-2" style={{alignItems:'center',marginBottom:'1.5rem'}}>
+        <button className="btn-outline btn-sm" onClick={() => setPage('businesses')}>← Volver</button>
+        <h1 className="page-title" style={{margin:0}}>{business?.name}</h1>
+      </div>
+      {success && <div className="alert" style={{background:'#d1fae5',color:'#065f46',border:'1px solid #6ee7b7',marginBottom:'1rem'}}>{success}</div>}
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1.5rem'}}>
+        <div>
+          <div className="card" style={{marginBottom:'1rem'}}>
+            <h2 style={{fontWeight:700,marginBottom:'1rem'}}>1. Elige el servicio</h2>
+            {MOCK_SERVICES.map(s => (
+              <div key={s.id} onClick={() => setSelectedService(s)} style={{padding:'.75rem',border:`2px solid ${selectedService?.id===s.id?'var(--primary)':'var(--border)'}`,borderRadius:'var(--radius)',marginBottom:'.5rem',cursor:'pointer',background:selectedService?.id===s.id?'#eff6ff':'var(--surface)'}}>
+                <div className="flex-between"><strong>{s.name}</strong><span style={{color:'var(--primary)',fontWeight:600}}>${s.price}</span></div>
+                <p className="text-muted" style={{fontSize:'.8rem'}}>⏱ {s.durationMinutes} min</p>
+              </div>
+            ))}
+          </div>
+          <div className="card">
+            <h2 style={{fontWeight:700,marginBottom:'1rem'}}>2. Elige la fecha</h2>
+            <input type="date" defaultValue="2026-06-01" />
+          </div>
+        </div>
+        <div>
+          <div className="card" style={{marginBottom:'1rem'}}>
+            <h2 style={{fontWeight:700,marginBottom:'.5rem'}}>3. Elige el horario</h2>
+            <div className="slot-grid">
+              {MOCK_SLOTS.map(slot => {
+                const time = slot.startTime.slice(11,16);
+                const isSel = selectedSlot?.startTime === slot.startTime;
+                return (
+                  <button key={slot.startTime} className={`slot-btn ${!slot.isAvailable?'taken':isSel?'selected':'available'}`} disabled={!slot.isAvailable} onClick={() => slot.isAvailable && setSelectedSlot(slot)}>
+                    {time}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          {selectedSlot && (
+            <div className="card">
+              <h2 style={{fontWeight:700,marginBottom:'1rem'}}>4. Confirmar cita</h2>
+              <div style={{background:'var(--bg)',borderRadius:'var(--radius)',padding:'.75rem',marginBottom:'1rem',fontSize:'.875rem'}}>
+                <p><strong>Servicio:</strong> {selectedService?.name}</p>
+                <p><strong>Fecha:</strong> domingo 1 de junio</p>
+                <p><strong>Hora:</strong> {selectedSlot.startTime.slice(11,16)}</p>
+                <p><strong>Precio:</strong> ${selectedService?.price}</p>
+              </div>
+              <div className="form-group">
+                <label>Notas <span className="text-muted">(opcional)</span></label>
+                <textarea rows={2} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Ej: alergia al latex..." />
+              </div>
+              {!user && <p className="text-muted" style={{marginBottom:'.75rem',fontSize:'.875rem'}}>Debes <a onClick={() => setPage('login')}>iniciar sesión</a> para confirmar.</p>}
+              <button className="btn-primary btn-full" onClick={handleBook}>Confirmar cita</button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── My Appointments ───────────────────────────────────────────
+function MyAppointmentsPage() {
+  const [appointments, setAppointments] = useState(MOCK_APPOINTMENTS);
+  const handleCancel = id => setAppointments(prev => prev.map(a => a.id===id ? {...a,status:'Cancelled'} : a));
+  return (
+    <div className="container page">
+      <h1 className="page-title">Mis citas</h1>
+      <div style={{display:'flex',flexDirection:'column',gap:'.75rem'}}>
+        {appointments.map(a => {
+          const start = new Date(a.startTime);
+          const canCancel = a.status!=='Cancelled' && a.status!=='Completed' && start > new Date();
+          return (
+            <div key={a.id} className="card flex-between">
+              <div>
+                <div className="flex gap-2" style={{alignItems:'center',marginBottom:'.35rem'}}>
+                  <strong>{a.serviceName}</strong>
+                  <span className={`badge badge-${a.status.toLowerCase()}`}>{STATUS_LABEL[a.status]}</span>
+                </div>
+                <p className="text-muted" style={{fontSize:'.85rem'}}>📅 {start.toLocaleDateString('es',{weekday:'long',day:'numeric',month:'long'})} · 🕐 {start.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'})}</p>
+                <p className="text-muted" style={{fontSize:'.85rem'}}>🏢 {a.businessName} · ${a.price}</p>
+                {a.notes && <p className="text-muted" style={{fontSize:'.8rem'}}>📝 {a.notes}</p>}
+              </div>
+              {canCancel && <button className="btn-danger btn-sm" onClick={() => handleCancel(a.id)}>Cancelar</button>}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Dashboard ─────────────────────────────────────────────────
+function DashboardPage() {
+  const [date, setDate] = useState('2026-06-01');
+  const [showNewSvc, setShowNewSvc] = useState(false);
+  const [services, setServices] = useState(MOCK_SERVICES);
+  const [svcForm, setSvcForm] = useState({name:'',durationMinutes:30,price:0});
+  const [appts, setAppts] = useState([
+    {id:'d1',clientName:'Pedro García',serviceName:'Corte de cabello',startTime:'2026-06-01T09:00',status:'Pending'},
+    {id:'d2',clientName:'Lucía Martínez',serviceName:'Corte + Barba',startTime:'2026-06-01T10:00',status:'Confirmed'},
+    {id:'d3',clientName:'Roberto Silva',serviceName:'Afeitado clásico',startTime:'2026-06-01T11:00',status:'Pending'},
+  ]);
+
+  const handleStatus = (id, status) => setAppts(prev => prev.map(a => a.id===id ? {...a,status} : a));
+  const handleAddSvc = e => { e.preventDefault(); setServices(s => [...s, {...svcForm, id:'new'+Date.now()}]); setShowNewSvc(false); setSvcForm({name:'',durationMinutes:30,price:0}); };
+  const handleDelSvc = id => setServices(s => s.filter(x => x.id!==id));
+
+  const STATUS_NEXT = { Pending:[{v:'Confirmed',l:'Confirmar'},{v:'Cancelled',l:'Cancelar'}], Confirmed:[{v:'Completed',l:'Completar'},{v:'Cancelled',l:'Cancelar'}] };
+
+  return (
+    <div className="container page">
+      <h1 className="page-title">Dashboard — Barbería El Estilo</h1>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1.5rem'}}>
+        <div>
+          <div className="flex-between" style={{marginBottom:'.75rem'}}>
+            <h2 style={{fontWeight:700}}>Servicios</h2>
+            <button className="btn-primary btn-sm" onClick={() => setShowNewSvc(v=>!v)}>+ Agregar</button>
+          </div>
+          {showNewSvc && (
+            <form onSubmit={handleAddSvc} className="card" style={{marginBottom:'1rem'}}>
+              <div className="form-group"><label>Nombre *</label><input required value={svcForm.name} onChange={e=>setSvcForm(f=>({...f,name:e.target.value}))} /></div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'1rem'}}>
+                <div className="form-group"><label>Duración (min)</label><input type="number" value={svcForm.durationMinutes} onChange={e=>setSvcForm(f=>({...f,durationMinutes:+e.target.value}))} /></div>
+                <div className="form-group"><label>Precio ($)</label><input type="number" value={svcForm.price} onChange={e=>setSvcForm(f=>({...f,price:+e.target.value}))} /></div>
+              </div>
+              <div className="flex gap-2"><button type="submit" className="btn-primary btn-sm">Guardar</button><button type="button" className="btn-outline btn-sm" onClick={()=>setShowNewSvc(false)}>Cancelar</button></div>
+            </form>
+          )}
+          {services.map(s => (
+            <div key={s.id} className="card flex-between" style={{marginBottom:'.5rem',padding:'1rem'}}>
+              <div><strong>{s.name}</strong><p className="text-muted" style={{fontSize:'.8rem'}}>⏱ {s.durationMinutes} min · ${s.price}</p></div>
+              <button className="btn-danger btn-sm" onClick={() => handleDelSvc(s.id)}>Eliminar</button>
+            </div>
+          ))}
+        </div>
+        <div>
+          <div className="flex-between" style={{marginBottom:'.75rem'}}>
+            <h2 style={{fontWeight:700}}>Citas del día</h2>
+            <input type="date" value={date} onChange={e=>setDate(e.target.value)} style={{width:'auto'}} />
+          </div>
+          {appts.map(a => {
+            const actions = STATUS_NEXT[a.status] || [];
+            return (
+              <div key={a.id} className="card" style={{marginBottom:'.5rem',padding:'1rem'}}>
+                <div className="flex-between" style={{marginBottom:'.35rem'}}>
+                  <strong>{a.clientName}</strong>
+                  <span className={`badge badge-${a.status.toLowerCase()}`}>{STATUS_LABEL[a.status]}</span>
+                </div>
+                <p className="text-muted" style={{fontSize:'.8rem'}}>{a.serviceName} · {a.startTime.slice(11,16)}</p>
+                {actions.length > 0 && (
+                  <div className="flex gap-2 mt-2">
+                    {actions.map(act => (
+                      <button key={act.v} className={act.v==='Cancelled'?'btn-outline btn-sm':'btn-primary btn-sm'} onClick={() => handleStatus(a.id, act.v)}>{act.l}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── App root ──────────────────────────────────────────────────
+function App() {
+  const [page, setPage] = useState('home');
+  const [user, setUser] = useState(null);
+  const [selectedBiz, setSelectedBiz] = useState(MOCK_BUSINESSES[0]);
+
+  const renderPage = () => {
+    switch(page) {
+      case 'home':           return <HomePage setPage={setPage} />;
+      case 'login':          return <LoginPage setPage={setPage} setUser={setUser} />;
+      case 'register':       return <RegisterPage setPage={setPage} setUser={setUser} />;
+      case 'businesses':     return <BusinessesPage setPage={setPage} setSelectedBiz={setSelectedBiz} />;
+      case 'booking':        return <BookingPage business={selectedBiz} user={user} setPage={setPage} />;
+      case 'my-appointments':return <MyAppointmentsPage />;
+      case 'dashboard':      return <DashboardPage />;
+      default:               return <HomePage setPage={setPage} />;
+    }
+  };
+
+  return (
+    <>
+      <Navbar page={page} setPage={setPage} user={user} setUser={setUser} />
+      {renderPage()}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
