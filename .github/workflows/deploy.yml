@@ -97,18 +97,15 @@ jobs:
           name: webapp
           path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
 
-      - name: Login to Azure
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-      - name: Zip and deploy
+      - name: Zip and deploy via Kudu
         run: |
           cd ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
           zip -r ../webapp.zip .
-          az webapp deploy \
-            --name ${{ env.AZURE_WEBAPP_NAME }} \
-            --resource-group turnosapp-rg \
-            --src-path ../webapp.zip \
-            --type zip \
-            --async false
+          curl -X POST \
+            "https://${{ env.AZURE_WEBAPP_NAME }}.scm.azurewebsites.net/api/zipdeploy" \
+            --user "${{ secrets.KUDU_USER }}:${{ secrets.KUDU_PWD }}" \
+            --data-binary @../webapp.zip \
+            -H "Content-Type: application/zip" \
+            --max-time 300 \
+            -f \
+            -s -o /dev/null -w "HTTP %{http_code}\n"
