@@ -10,11 +10,10 @@ on:
 env:
   DOTNET_VERSION: '9.0.x'
   AZURE_WEBAPP_NAME: turnosapp-arayajs
-  AZURE_WEBAPP_PACKAGE_PATH: './publish'
 
 jobs:
   # ─────────────────────────────────────────────
-  # Job 1: Build + Unit Tests
+  # Job 1: Build + Unit Tests (all branches/PRs)
   # ─────────────────────────────────────────────
   build-and-test:
     name: Build & Test
@@ -51,13 +50,16 @@ jobs:
           path: ./TestResults/*.trx
 
   # ─────────────────────────────────────────────
-  # Job 2: Publish artifact (only on push to main)
+  # Job 2: Publish + Deploy (main branch only)
   # ─────────────────────────────────────────────
-  publish:
-    name: Publish
+  deploy:
+    name: Deploy to Azure
     needs: build-and-test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net
 
     steps:
       - uses: actions/checkout@v4
@@ -67,39 +69,15 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Restore & Publish
+      - name: Publish
         run: >
           dotnet publish src/TurnOS.API/TurnOS.API.csproj
           --configuration Release
-          --output ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+          --output ./publish
 
-      - name: Upload publish artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: webapp
-          path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
-
-  # ─────────────────────────────────────────────
-  # Job 3: Deploy to Azure App Service
-  # ─────────────────────────────────────────────
-  deploy:
-    name: Deploy to Azure
-    needs: publish
-    runs-on: ubuntu-latest
-    environment:
-      name: production
-      url: https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net
-
-    steps:
-      - name: Download publish artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: webapp
-          path: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
-
-      - name: Zip and deploy via Kudu
+      - name: Deploy via Kudu ZipDeploy
         run: |
-          cd ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+          cd ./publish
           zip -r ../webapp.zip .
           curl -X POST \
             "https://${{ env.AZURE_WEBAPP_NAME }}.scm.azurewebsites.net/api/zipdeploy" \
@@ -108,4 +86,4 @@ jobs:
             -H "Content-Type: application/zip" \
             --max-time 300 \
             -f \
-            -s -o /dev/null -w "HTTP %{http_code}\n"
+            -w "HTTP %{http_code}\n"
