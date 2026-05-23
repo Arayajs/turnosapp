@@ -19,7 +19,7 @@ export default function Navbar() {
     }}>
       <div className="container flex-between">
         <Link to="/" style={{ color: '#fff', fontWeight: 700, fontSize: '1.25rem', textDecoration: 'none' }}>
-          TurnOS
+          TurnApp
         </Link>
 
         <div className="flex gap-4" style={{ alignItems: 'center' }}>

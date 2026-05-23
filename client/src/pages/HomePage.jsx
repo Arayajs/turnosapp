@@ -5,7 +5,7 @@ export default function HomePage() {
     <div>
       {/* Hero */}
       <section style={{
-        background: 'linear-gradient(135deg, #1e293b 0%, #2563eb 100%)',
+        background: 'linear-gradient(135deg, #3b0764 0%, #7c3aed 100%)',
         color: '#fff',
         padding: '5rem 0',
         textAlign: 'center',
@@ -15,7 +15,7 @@ export default function HomePage() {
             Agenda tus citas<br />en segundos
           </h1>
           <p style={{ fontSize: '1.15rem', color: '#cbd5e1', maxWidth: 520, margin: '0 auto 2rem' }}>
-            TurnOS conecta clientes con barberías, clínicas y talleres. Elige horario, confirma al instante.
+            TurnApp conecta clientes con barberías, clínicas y talleres. Elige horario, confirma al instante.
           </p>
           <div className="flex gap-4" style={{ justifyContent: 'center' }}>
             <Link to="/businesses">
@@ -36,7 +36,7 @@ export default function HomePage() {
       <section style={{ padding: '4rem 0' }}>
         <div className="container">
           <h2 style={{ textAlign: 'center', fontSize: '1.75rem', fontWeight: 700, marginBottom: '2.5rem' }}>
-            ¿Por qué TurnOS?
+            ¿Por qué TurnApp?
           </h2>
           <div className="grid-3">
             {[
